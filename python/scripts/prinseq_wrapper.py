@@ -31,7 +31,10 @@ def make_header(args):
           '#SBATCH -p %s' % args.partition,
           '#SBATCH -N %d' % args.nodes,'',
           'export prinseq=%s' % args.prinseq_path,
-          'export basecmd="%s"' % make_base_cmd(args),''
+          'export basecmd="%s"' % make_base_cmd(args),'',
+          'echo "[-- prinseq_wrapper --]"',
+          'echo "[-- prinseq_wrapper --] Prinseq executable: $prinseq"',
+          'echo "[-- prinseq_wrapper --] Prinseq arguments:  $basecmd"','',          
          ]
 
 def make_footer():
@@ -65,7 +68,8 @@ def getcmdlist(allfiles,check_pairs,delim):
     if guess_encoding(files[0]) == 'Phred+64':
       cmd.append('-phred64')
     cmd.extend(['-out_good','%s_prinseq ' % k,'$basecmd','&'])
-    cmdlist.append(' '.join(cmd))
+    # cmdlist.append('echo "[-- prinseq_wrapper --] %s"' % ' '.join(cmd))
+    cmdlist.append(' '.join(cmd))    
   return cmdlist
 
 
@@ -100,10 +104,11 @@ if __name__ == '__main__':
   import argparse
   import sys
   parser = argparse.ArgumentParser(description='',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser.add_argument('--fofn',help="File of file names")
   parser.add_argument('--single',action='store_true',help="All files are single-end. Do not attempt to find paired files.")
   parser.add_argument('--nosubmit',action='store_true',help="Do not submit jobs directly. Output is written to batch scripts")
   parser.add_argument('--delim',default='_',help="Delimiter used when looking for paired files.")
-  parser.add_argument('--chunksize',type=int,default=8,help="Number of processes per job. This should be equal to the number of CPUs per node")
+  parser.add_argument('--chunksize',type=int,default=16,help="Number of processes per job. This should be equal to the number of CPUs per node")
   
   parser.add_argument('--wallhrs',type=int,default=8,help="Slurm walltime request (hours)")
   parser.add_argument('--partition',default="short",help="Slurm partition request for resource allocation")
@@ -113,8 +118,8 @@ if __name__ == '__main__':
   parser.add_argument('--out_bad', default='null', help="File to write data that fails filters.")
   parser.add_argument('--min_len', default='40', help=" Filter sequence shorter than min_len.")
   parser.add_argument('--min_qual_mean', default='30', help="Filter sequence with quality score mean below min_qual_mean.")
-  parser.add_argument('--trim_qual_left', default='25', help="Trim sequence by quality score from the 5'-end with this threshold score.")
-  parser.add_argument('--trim_qual_right', default='25', help="Trim sequence by quality score from the 3'-end with this threshold score.")
+  parser.add_argument('--trim_qual_left', default='20', help="Trim sequence by quality score from the 5'-end with this threshold score.")
+  parser.add_argument('--trim_qual_right', default='20', help="Trim sequence by quality score from the 3'-end with this threshold score.")
   parser.add_argument('--ns_max_n', default='0', help="Filter sequence with more than ns_max_n Ns.")
   parser.add_argument('--derep', default='23', help="Type of duplicates to filter.")
   parser.add_argument('--trim_tail_left', default='5', help="Trim poly-A/T tail with a minimum length of trim_tail_left at the 5'-end.")
