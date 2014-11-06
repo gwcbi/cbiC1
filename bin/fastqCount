@@ -1,0 +1,18 @@
+#! /bin/bash
+
+# A simple bash script for counting reads and bases in fastq files
+
+function fastqCount() {
+  local infile=$1
+  local v=$(sed -n '2~4p' $infile | wc -lc)
+  local nline=$(echo $v | cut -f1 -d' ')
+  local nchar=$(( $(echo $v | cut -f2 -d' ') - $nline ))
+  echo -e "$infile\t$nline\t$nchar"
+}
+
+[[ -z $1 ]] && files="*" || files="$@"
+for f in $files; do
+  [[ "${f##*.}" == "fastq" ]] && fastqCount $f
+  [[ "${f##*.}" == "fq" ]] && fastqCount $f 
+done
+
