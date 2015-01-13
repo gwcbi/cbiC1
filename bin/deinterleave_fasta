@@ -24,7 +24,7 @@ if [[ $3 == "compress" ]]; then
 fi
  
 if [[ ${GZIP_OUTPUT} == 0 ]]; then
-  paste - - - -  | tee >(cut -f 1-2 | tr "\t" "\n" > $1) | cut -f 3-4 | tr "\t" "\n" > $2
+  paste - - - - | tee >(cut -f 1-2 | tr "\t" "\n" > $1) | cut -f 3-4 | tr "\t" "\n" > $2
 else
-  paste - - - -  | tee >(cut -f 1-2 | tr "\t" "\n" | pigz --best --processes ${PIGZ_COMPRESSION_THREADS} > $1) | cut -f 3-4 | tr "\t" "\n" | pigz --best --processes ${PIGZ_COMPRESSION_THREADS} > $2
+  paste - - - - | tee >(cut -f 1-2 | tr "\t" "\n" | pigz --best --processes ${PIGZ_COMPRESSION_THREADS} > $1) | cut -f 3-4 | tr "\t" "\n" | pigz --best --processes ${PIGZ_COMPRESSION_THREADS} > $2
 fi
