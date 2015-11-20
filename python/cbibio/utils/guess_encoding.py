@@ -28,7 +28,7 @@ def guess_encoding(fh,nsamp=10000):
 if __name__ == '__main__':
   import argparse
   import sys
-  parser = argparse.ArgumentParser(description='convert dfam hits to GTF')
+  parser = argparse.ArgumentParser(description='Guess the encoding of fastq file')
   parser.add_argument('infile', nargs='?', type=argparse.FileType('rU'), default=sys.stdin)
   args = parser.parse_args()
   print >>sys.stdout, guess_encoding(args.infile)

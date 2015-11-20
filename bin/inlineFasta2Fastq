@@ -1,0 +1,8 @@
+#! /usr/bin/perl
+##########################################################################################
+# Convert fasta file on STDIN to fastq file on STDOUT
+# Assumes fasta file is well-formed.
+# Quality score given is 40 ("I")
+##########################################################################################
+while(<>) {if ($. % 2 == 1) { s/^>/@/; print "$_"; } else {$q="I"x((length $_)-1); print "$_+\n$q\n";}}
+
