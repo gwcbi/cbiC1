@@ -40,7 +40,7 @@ fastqCount readdir/*
 
 Example:
 ```bash
-cat reads.fastq | inlineFastq2Fasta > reads.fastq
+cat reads.fastq | inlineFastq2Fasta > reads.fasta
 ```
 
 #### `inlineFasta2Fastq`
