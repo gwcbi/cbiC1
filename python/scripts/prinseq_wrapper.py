@@ -229,9 +229,8 @@ def main(args):
         else:
             # Submit these
             from subprocess import Popen,PIPE
-            #p = Popen(['sbatch','-J','prinseq%02d' % (i+1)],  stdin=PIPE, stdout=PIPE)
-            #out,err = p.communicate(input='\n'.join(script))
-            out = 'Submitted job 12345'
+            p = Popen(['sbatch','-J','prinseq%02d' % (i+1)],  stdin=PIPE, stdout=PIPE)
+            out,err = p.communicate(input='\n'.join(script))
             print >>sys.stderr, '[--- job: prinseq%02d ---] %s. Running %d prinseq processes.' % ((i+1), out, len(chunk))
             if args.detail:
                 print >>sys.stderr, '\n'.join(script)
