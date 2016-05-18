@@ -231,7 +231,7 @@ def main(args):
             from subprocess import Popen,PIPE
             p = Popen(['sbatch','-J','prinseq%02d' % (i+1)],  stdin=PIPE, stdout=PIPE)
             out,err = p.communicate(input='\n'.join(script))
-            print >>sys.stderr, '[--- job: prinseq%02d ---] %s. Running %d prinseq processes.' % ((i+1), out, len(chunk))
+            print >>sys.stderr, '[--- job: prinseq%02d ---] %s. Running %d prinseq processes.' % ((i+1), out.strip('\n'), len(chunk))
             if args.detail:
                 print >>sys.stderr, '\n'.join(script)
                 print >>sys.stderr, ''
