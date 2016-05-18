@@ -12,137 +12,109 @@ from cbibio.utils.guess_encoding import guess_encoding
 FASTQ_EXTENSIONS = set(['fastq','fq'])
 # Extensions for fasta files
 FASTA_EXTENSIONS = set(['fasta','fa', 'fas', 'fna'])
+
 # Arguments for PRINSEQ
-PRINSEQ_ARGS = ['min_len', 'max_len', 'range_len',
-                'min_gc','max_gc','range_gc',
-                'min_qual_score', 'max_qual_score',
-                'min_qual_mean', 'max_qual_mean',
-                'ns_max_p', 'ns_max_n', 
-                'seq_num', 'derep', 'derep_min',
-                'lc_method', 'lc_threshold',
-                'trim_to_len',
-                'trim_left', 'trim_right', 
-                'trim_left_p','trim_right_p',
-                'trim_tail_left','trim_tail_right',
-                'trim_ns_left','trim_ns_right',
-                'trim_qual_left','trim_qual_right',
-                'trim_qual_type', 'trim_qual_rule', 'trim_qual_window', 'trim_qual_step',
-                 ]
+PRINSEQ_ARGS =        [ 'min_len', 'max_len', 'range_len',
+                        'min_gc','max_gc','range_gc',
+                        'min_qual_score', 'max_qual_score',
+                        'min_qual_mean', 'max_qual_mean',
+                        'ns_max_p', 'ns_max_n', 
+                        'seq_num',
+                        'derep', 'derep_min',
+                        'lc_method', 'lc_threshold',
+                        'trim_to_len',
+                        'trim_left', 'trim_right', 
+                        'trim_left_p','trim_right_p',
+                        'trim_tail_left','trim_tail_right',
+                        'trim_ns_left','trim_ns_right',
+                        'trim_qual_left','trim_qual_right',
+                        'trim_qual_type', 'trim_qual_rule', 'trim_qual_window', 'trim_qual_step',
+                      ]
 # Flags for PRINSEQ                 
 PRINSEQ_FLAGS = ['noniupac']
+
 # Preset for Illumina data
-ILLUMINA_PRESET = { 'min_len':40,
-                    'min_qual_mean':20,
-                    'derep': '23',
-                    'lc_method': 'dust',
-                    'lc_threshold':7,
-                    'trim_qual_left': 20,
-                    'trim_qual_right': 20,
-                    'trim_tail_left': 5,
-                    'trim_tail_right': 5,
-                    'trim_ns_left': 1,
-                    'trim_ns_right': 1,
-                    }
+ILLUMINA_PRESET =     { 'min_len': 40,
+                        'min_qual_mean': 20,
+                        'derep': '23',
+                        'lc_method': 'dust',
+                        'lc_threshold': 7,
+                        'trim_qual_left': 20,
+                        'trim_qual_right': 20,
+                        'trim_tail_left': 5,
+                        'trim_tail_right': 5,
+                        'trim_ns_left': 1,
+                        'trim_ns_right': 1,
+                      }
 # Preset for IonTorrent data
-                    
-
-
+IONTORRENT_PRESET =   { 'min_len': 40,
+                        'min_qual_mean': 17,
+                        'derep': '14',
+                        'lc_method': 'dust',
+                        'lc_threshold': 7,
+                        'trim_qual_left': 17,
+                        'trim_qual_right': 17,
+                        'trim_tail_left': 5,
+                        'trim_tail_right': 5,
+                        'trim_ns_left': 1,
+                        'trim_ns_right': 1,
+                      }
 
 """ Functions """
+
 def chunks(l, n):
   ''' Yield successive n-sized chunks from list. '''
   for i in xrange(0, len(l), n):
     yield l[i:i+n]
 
-"""
-def make_base_cmd(args):
-  ''' Make command line with standard parameters '''
-  params = ['out_bad','min_len','min_qual_mean','trim_qual_left','trim_qual_right',
-            'ns_max_n','derep','trim_tail_left','trim_tail_right','lc_method',
-            'lc_threshold']
-  d = vars(args)
-  pcmd = ' '.join('-%s %s' % (p,d[p]) for p in params)
-  # Only have one flag for now
-  fcmd = '-no_qual_header' if not args.qual_header else ''
-  return '%s %s' % (pcmd,fcmd)
-"""
+def get_file_prefix(fn, args):
+    extstr = '|'.join(FASTA_EXTENSIONS) if args.fasta else '|'.join(FASTQ_EXTENSIONS)    
+    m = re.search('^(.*)%s([a-zA-Z0-9]+)\.(%s)$' % ('_', extstr),  fn)
+    if m:
+        return m.group(1)
+    m = re.search('^(.*)\.(%s)$' % extstr, fn)
+    if m:
+        return m.group(1)
+    return '.'.join(fn.split('.')[:-1])
 
-"""
-def getcmdlist(allfiles, args):
-  ''' Formats command line arguments for list of files
-      If check_pairs=True, the filenames (minus extension) are split on the delimiter and
-        files with identical prefixes are considered to be pairs.
-      The appropriate command line for each set of files is generated, using -fastq2 if
-        necessary.
-      Encoding offset is also checked and added to command line
-  '''
-  from collections import defaultdict
-  pairs = defaultdict(list)
-  for f in allfiles:
-    noext = '.'.join(f.split('.')[:-1])
-    if check_pairs:
-      prefix = delim.join(noext.split(delim)[:-1])
-    else:
-      prefix = noext
-    pairs[prefix].append(f)
-  
-  cmdlist = []
-  for k,files in pairs.iteritems():
-    assert len(files)<3, "ERROR: too many files found! %s -> %s" % (k,files)
-    cmd = ['$prinseq','-fastq',files[0]]
-    if len(files)==2:
-      cmd.append('-fastq2')
-      cmd.append(files[1])
-    if guess_encoding(files[0]) == 'Phred+64':
-      cmd.append('-phred64')
-    cmd.extend(['-out_good','%s_prinseq ' % k,'$basecmd','&'])
-    # cmdlist.append('echo "[-- prinseq_wrapper --] %s"' % ' '.join(cmd))
-    cmdlist.append(' '.join(cmd))    
-  return cmdlist
-"""
-
-def make_proccmd(fs, args):
+def make_filecmd(fs, args):
+    ''' Creates the command line for one file or pair of files '''
+    # Information about the files
     fastx = 'fasta' if args.fasta else 'fastq'
     paired = len(fs) == 2
+    prefix = get_file_prefix(fs[0], args)
     
-    # Get the prefix of the files
-    extstr = '|'.join(FASTA_EXTENSIONS) if args.fasta else '|'.join(FASTQ_EXTENSIONS)    
-    m = re.search('^(.*)%s([a-zA-Z0-9]+).(%s)$' % (args.delim, extstr),  fs[0])
-    if m:
-        prefix = m.group(1)
-    else:
-        prefix = '.'.join(fs[0].split('.')[:-1])
-    
-    # Get encoding of the files
-    if guess_encoding(fs[0]) == 'Phred+64':
-        commandline.append('-phred64')
-        
-    # Build command line
-    commandline = ['prinseq-lite',]    
-    commandline.append('-%s' % fastx)
-    commandline.append('%s' % fs[0])
     if paired:
-        commandline.append('-%s2' % fastx)
-        commandline.append('%s' % fs[1])
+        assert prefix == get_file_prefix(fs[1], args)
 
-    if not args.out_prinseq_names:
-        commandline.append('-out_good')
-        commandline.append('%s_pseq' % prefix)
+    # Guess the encoding of the files
+    if guess_encoding(fs[0]) == 'Phred+64':
+        encoding = '-phred64'
     else:
-        pass # do prinseq default
+        encoding = ''
 
+    # Input arguments    
+    file1str = "-%s %s" % (fastx, fs[0])
+    if paired:
+        file2str = "-%s2 %s" % (fastx, fs[1])
+    else:
+        file2str = ''
+
+    # Output arguments
+    if not args.out_prinseq_names:
+        goodstr = "-out_good %s_pseq" % prefix             # Output good file with wrapper naming scheme
+    else:
+        goodstr = ''                                       # Output good file with prinseq naming scheme
+    
     if not args.out_bad:
-        commandline.append('-out_bad')
-        commandline.append('null')
+        badstr = '-out_bad null'                           # Do not output bad file
     else:
         if not args.out_prinseq_names:
-            commandline.append('-out_bad')
-            commandline.append('%s_pseqfail' % prefix)
+            badstr =  '-out_bad %s_pseqfail' % prefix      # Output bad file with wrapper naming scheme
         else:
-           pass # do prinseq default
+            badstr =  ''                                   # Output bad file with prinseq naming scheme
 
-    commandline.append('$basecmd')
-    commandline.append('&')    
+    commandline = ['prinseq-lite', encoding, file1str, file2str, goodstr, badstr, "$basecmd", "&" ]
     return commandline
 
 def make_basecmd(args):
@@ -153,11 +125,11 @@ def make_basecmd(args):
     d = vars(args)    
     for argkey in PRINSEQ_ARGS:
         if d[argkey] is not None:
-            commandline.append('-%s' % argkey)
-            commandline.append('%s' % d[argkey])
+            commandline.append('-%s %s' % (argkey, d[argkey]))
         elif args.illumina and argkey in ILLUMINA_PRESET:
-            commandline.append('-%s' % argkey)
-            commandline.append('%s' % ILLUMINA_PRESET[argkey])
+            commandline.append('-%s %s' % (argkey, ILLUMINA_PRESET[argkey]))        
+        elif args.iontorrent and argkey in IONTORRENT_PRESET:
+            commandline.append('-%s %s' % (argkey, IONTORRENT_PRESET[argkey]))        
     for argkey in PRINSEQ_FLAGS:
         if d[argkey]:
             commandline.append('-%s' % argkey)        
@@ -172,12 +144,9 @@ def get_filesets(flist, args):
         return [(f,) for f in flist]
     pairs = defaultdict(list)
     for f in flist:
-        extstr = '|'.join(FASTA_EXTENSIONS) if args.fasta else '|'.join(FASTQ_EXTENSIONS)
-        m = re.search('^(.*)%s([a-zA-Z0-9]+).(%s)$' % (args.delim, extstr),  f)
-        if m:
-            pairs[m.group(1)].append(f)
-        else:
-            pairs[f].append(f)
+        prefix = get_file_prefix(f, args)
+        pairs[prefix].append(f)
+    
     ret = []
     for prefix, fl in pairs.iteritems():
         if len(fl) == 1:
@@ -186,43 +155,53 @@ def get_filesets(flist, args):
             ret.append(tuple(sorted(fl)))
         else:
             sys.exit("ERROR: identifying pairs failed! %s" % ', '.join(fl))
-    return ret
+    return sorted(ret, key=lambda x:x[0])
 
 def make_header(args):
   ''' Returns header for batch scripts '''
-  return [
-          '#! /bin/bash',
-          '#SBATCH -t %d' % args.walltime,
-          '#SBATCH -p %s' % args.partition,
-          '#SBATCH -N %d' % args.nodes,
-          '',
-          'module load %s' % args.prinseq_module,
-          'export basecmd="%s"' % ' '.join(make_basecmd(args)),'',
-          'echo "[-- prinseq_wrapper --]"',
-          'echo "[-- prinseq_wrapper --] Prinseq executable: $(which prinseq-lite)"',
-          'echo "[-- prinseq_wrapper --] Prinseq arguments:  $basecmd"','',          
+  return [     '#! /bin/bash',
+               '#SBATCH -t %d' % args.walltime,
+               '#SBATCH -p %s' % args.partition,
+               '#SBATCH -N %d' % args.nodes,
+               '',
+               'SN="prinseq_wrapper"',
+               'echo "[---$SN---] ($(date)) Starting $SN"',
+               't1=$(date +"%s")',
+               '',
+               'module load %s' % args.prinseq_module,
+               'export basecmd="%s"' % ' '.join(make_basecmd(args)),'',
+               'echo "[---$SN---] ($(date))  Prinseq executable: $(which prinseq-lite)"',
+               'echo "[---$SN---] ($(date))  Prinseq arguments:  $basecmd"',
+               '',          
          ]
 
 def make_footer():
-  return ['',
-          '# Wait for all subprocesses to finish',
-          'wait',
-          'echo "[-- prinseq_wrapper --] Complete"',
+  ''' Returns footer for batch scripts '''
+  return [     '',
+               '# Wait for all subprocesses to finish',
+               'wait',
+               '',
+               '#---Complete job',
+               't2=$(date +"%s")',
+               'diff=$(($t2-$t1))',
+               'echo "[---$SN---] Total time: ($(date)) $(($diff / 60)) minutes and $(($diff % 60)) seconds."',
+               'echo "[---$SN---] ($(date)) $SN COMPLETE."',
          ]
 
 def main(args):
     if not args.nosubmit:
         from subprocess import Popen,PIPE
 
+    # Get list of files
     if args.fofn is not None:
         allfiles  = sorted([l.strip() for l in args.fofn])
     else:
-        # Generate commands for each file set
         if args.fasta:
             allfiles  = sorted([f for f in glob('*') if f.split('.')[-1] in FASTA_EXTENSIONS])
         else:
             allfiles  = sorted([f for f in glob('*') if f.split('.')[-1] in FASTQ_EXTENSIONS])
-        
+    
+    # Identify pairs of files
     filesets = get_filesets(allfiles, args)
     print >>sys.stderr, "INPUT FILES FOUND:"
     for fs in filesets:
@@ -230,46 +209,35 @@ def main(args):
             print >>sys.stderr, 'unpaired: %s' % fs[0]
         elif len(fs)==2:
             print >>sys.stderr, 'reads1: %s\treads2: %s' % (fs)
+    print >>sys.stderr, ''
 
+    # Construct job script
     header = make_header(args)
     footer = make_footer()
-    
     for i,chunk in enumerate(chunks(filesets, args.chunksize)):
-        body = [' '.join(make_proccmd(fs, args)) for fs in chunk]
-        script = header + body + footer
+        filecmds = []
+        for fs in chunk:
+            cmd = ' '.join(make_filecmd(fs, args))
+            filecmds.extend(['echo "[---$SN---] ($(date)) COMMAND: %s"' % cmd, cmd, ''])
+        script = header + filecmds + footer
+        
+        # Submit jobs or write files
         if args.nosubmit:
+            print >>sys.stderr, '[--- job: prinseq%02d ---] Slurm script written to "job.%02d.sh".' % ((i+1), (i+1))
             with open('job.%02d.sh' % (i+1), 'w') as outh: 
                 print >>outh, '\n'.join(script)
         else:
-            #submit these
-            print >>sys.stderr, '\n### Job %d ###' % (i+1)
-            print >>sys.stderr, '\n'.join(script)
-
-
-"""
-
-
-
-    cmdlist = getcmdlist(allfiles, args)
-
-  # Generate header and footer lines
-  header  = make_header(args)
-  footer  = make_footer()
-  
-  # Produce jobs
-  counter = 1
-  for chunk in chunks(cmdlist,args.chunksize):
-    script = header + chunk + footer
-    if args.nosubmit:
-      with open('job%02d.sh' % counter,'w') as outh:
-        print >>outh, '\n'.join(script)
-    else:
-      p = Popen(['sbatch','-J','prinseq%02d' % counter],stdin=PIPE,stdout=PIPE)
-      out,err = p.communicate(input='\n'.join(script))
-      print >>sys.stderr, "%s. Running %d prinseq processes" % (out,len(chunk))
-    counter += 1
-"""
-
+            # Submit these
+            from subprocess import Popen,PIPE
+            #p = Popen(['sbatch','-J','prinseq%02d' % (i+1)],  stdin=PIPE, stdout=PIPE)
+            #out,err = p.communicate(input='\n'.join(script))
+            out = 'Submitted job 12345'
+            print >>sys.stderr, '[--- job: prinseq%02d ---] %s. Running %d prinseq processes.' % ((i+1), out, len(chunk))
+            if args.detail:
+                print >>sys.stderr, '\n'.join(script)
+                print >>sys.stderr, ''
+            
+            
 if __name__ == '__main__':
   import argparse
   import sys
@@ -279,6 +247,9 @@ if __name__ == '__main__':
   preset_group.add_argument('--illumina', action='store_true',
                            help='''Illumina filtering presets. 
                                    Equivalent to "%s"''' % ' '.join('-%s %s' % (k,v) for k,v in ILLUMINA_PRESET.iteritems()) )
+  preset_group.add_argument('--iontorrent', action='store_true',
+                           help='''IonTorrent filtering presets. 
+                                   Equivalent to "%s"''' % ' '.join('-%s %s' % (k,v) for k,v in IONTORRENT_PRESET.iteritems()) )
   
   input_group = parser.add_argument_group("Input options")
   input_group.add_argument('--fofn', type=argparse.FileType('r'),
@@ -303,9 +274,10 @@ if __name__ == '__main__':
                            help="Slurm node request")
   slurm_group.add_argument('--prinseq_module', default="prinseq/0.20.4", 
                            help='Name of prinseq module. Calling "module load [prinseq_module]" must load prinseq-lite into environment')
-  
-  # preset_group = parser.add_argument_group("Presets options")
-  
+  slurm_group.add_argument('--detail', action='store_true',
+                           help='Show detailed information about jobs being submitted.')
+
+
   output_group = parser.add_argument_group("Output options")
   output_group.add_argument('--out_format', type=int, default=3,
                            help='''To change the output format, use one of the following options. 
@@ -317,27 +289,6 @@ if __name__ == '__main__':
                                    is to add random characters to prevent overwriting; however, the
                                    filenames can be cumbersome for downstream analysis. Use this flag to
                                    use the default prinseq behavior.''')
-  """                                 
-  output_group.add_argument('--out_good', 
-                           help='''By default, this wrapper names the good output files by removing the file
-                                   extension and adding "_prinseq" to the file name. The prinseq default
-                                   is Note that this is 
-                                   different the prinseq default, which 
-                                   By default, the output files are created in the same directory
-                                   as the input file containing the sequence data with an
-                                   additional "_prinseq_good_XXXX" in their name (where XXXX is
-                                   replaced by random characters to prevent overwriting previous
-                                   files). To change the output filename and location, specify the
-                                   filename using this option. The file extension will be added
-                                   automatically (either .fasta, .qual, or .fastq). For paired-end
-                                   data, filenames contain additionally "_1", "_1_singletons",
-                                   "_2", and "_2_singletons" before the file extension. Use
-                                   "-out_good null" to prevent the program from generating the
-                                   output file(s) for data passing all filters. Use "-out_good
-                                   stdout" to write data passing all filters to STDOUT (only for
-                                   FASTA or FASTQ output files). Example: use "file_passed" to generate the output file
-                                   file_passed.fasta in the current directory)''')
-  """
   output_group.add_argument('--out_bad', action='store_true',
                             help='''By default, this wrapper does not output "bad" data that
                                     does not pass filters. Use this flag to output the failed
@@ -472,34 +423,3 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
   main(args)
-
-
-"""
-PARAMS = {
-           'out_bad':'null',           # File to write data that fails filters.
-           'min_len':'40',             # Filter sequence shorter than min_len.
-           'min_qual_mean':'25',       # Filter sequence with quality score mean below min_qual_mean. 
-           'trim_qual_left':'25',      # Trim sequence by quality score from the 5'-end with this threshold score.
-           'trim_qual_right':'25',     # Trim sequence by quality score from the 3'-end with this threshold score.
-           'ns_max_n':'0',             # Filter sequence with more than ns_max_n Ns.
-           'derep':'1',                # Type of duplicates to filter.
-           'trim_tail_left':'5',       # Trim poly-A/T tail with a minimum length of trim_tail_left at the 5'-end.
-           'trim_tail_right':'5',      # Trim poly-A/T tail with a minimum length of trim_tail_left at the 3'-end.
-           'lc_method':'dust',         # Method to filter low complexity sequences.
-           'lc_threshold':'7',         # The threshold value (between 0 and 100) used to filter sequences by sequence complexity.
-         }
-# Default flags for prinseq
-FLAGS = [
-           'no_qual_header',           # Generate an empty header line for the quality data in FASTQ files
-        ] 
-"""
-"""
-def getbasecmd():
-  params = ' '.join('-%s %s' % t for t in PARAMS.iteritems())
-  flags  = ' '.join('-%s' % t for t in FLAGS)  
-  return '$prinseq %s %s ' % (params,flags)
-"""
-
-ILLUMINA_PARAMS = {
-    
-}
