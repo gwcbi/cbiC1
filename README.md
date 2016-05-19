@@ -25,7 +25,7 @@ then compute read and base counts for each file. Uses linux utilities (sed and w
 is reasonably fast. Run without arguments to find files in working directory, or provide
 an expandable path as command line argument.
 
-Example:
+###### Example:
 ```bash
 # Count files in current working directory
 fastqCount
@@ -38,7 +38,7 @@ fastqCount readdir/*
 
 **Convert fastq file on `stdin` to fasta file on `stdout`.** Easy enough.
 
-Example:
+###### Example:
 ```bash
 cat reads.fastq | inlineFastq2Fasta > reads.fasta
 ```
@@ -47,7 +47,7 @@ cat reads.fastq | inlineFastq2Fasta > reads.fasta
 
 **Convert fasta file on `stdin` to fastq file on `stdout`.** All bases receive quality score of 40 (I).
 
-Example:
+###### Example:
 ```bash
 cat reads.fasta | inlineFasta2Fastq > reads.fastq
 ```
@@ -59,7 +59,7 @@ passed on `stdin`, provide output file names as command line arguments. Uses lin
 so it is reasonably fast. Output files are compressed if 3rd command line argument
 is "compress" (requires pigz).
 
-Example:
+###### Example:
 ```bash
 cat interleaved.fasta | deinterleave_fasta fwd.fasta rev.fasta
 ```
@@ -72,7 +72,7 @@ can deinterleave 100 million paired reads (200 million total reads; a 43Gbyte fi
 memory (/dev/shm), in 4m15s (255s). Output files are compressed if 3rd command line argument
 is "compress" (requires pigz).
 
-Example:
+###### Example:
 ```bash
 cat interleaved.fastq | deinterleave_fastq fwd.fastq rev.fastq
 ```
@@ -83,23 +83,29 @@ cat interleaved.fastq | deinterleave_fastq fwd.fastq rev.fastq
 on the first 10K reads and returns the best guess. Fastq can be passed on `stdin` and encoding
 returned on `stdout`
 
-Example:
+###### Example:
 ```bash
 cbi_guess_encoding < reads.fastq
 # Phred+33
 ```
 
-### Wrappers
+#### `cbi_sra_metadata`
 
-#### `extractSRA.sh`
+**Retrieve metadata for all runs in SRA project.** Uses Entrez to find all runs for
+a given SRA project accession (begins with "SRP") and retrieve XML metadata for all
+runs. In addition to the XML files, generates a sample matrix with attribute values for
+each sample and a list of URLs for downloading the SRA files.
 
-**Extract fastq from an SRA file.** This is used to submit a slurm job for extracting an 
-SRA file. Loads the `sra` module and runs `fastq_dump`. Specify the path to your SRA file
-in the bash variable `srafile` by providing the `--export` argument to sbatch (see below).
-
+###### Example:
 ```bash
-sbatch --export srafile=SRR000001.sra extractSRA.sh
+# Save data for SRA runs in "metadata" directory
+cbi_sra_metadata SRP055981
+
+# Download all the SRA files using wget
+wget -i sample_urls.txt
 ```
+
+### Wrappers
 
 #### `cbi_fastq_filter`
 
@@ -107,5 +113,40 @@ Need to write description
 
 #### `cbi_prinseq_wrapper`
 
-Need to write description
+**Creates SLURM jobs for running [PRINSEQ](http://prinseq.sourceforge.net/) in parallel.**
+Sequence read files can be discovered (in current directory with *.fq or *.fastq extension) or
+specified using a file of file names; paired files are automatically detected. Several processes
+are spawned for each SLURM job for multi-core utilization, and may be split into several jobs
+depending on the number of inputs.
 
+For detailed information:
+```bash
+cbi_prinseq_wrapper -h
+```
+
+###### Example:
+```bash
+# Find all *.fq and *.fastq in the current directory, identify
+# possible paired files, and trim/filter using Illumina presets.
+
+cbi_prinseq_wrapper --illumina
+
+# For the files listed in "samples.fofn", trim and filter using
+# IonTorrent presets, assuming all are unpaired
+
+cbi_prinseq_wrapper --fofn samples.fofn --single --iontorrent
+```
+
+#### `cbi_fastq_dump_wrapper`
+
+**Creates SLURM jobs for running [fastq-dump](http://www.ncbi.nlm.nih.gov/books/NBK158900/) in parallel.**
+SRA files can be discovered (in current directory with *.sra extension) or
+specified using a file of file names. Files are extracted to FASTQ, mate pairs are split 
+into seperate files, and output is gzipped. This wrapper replaces `extractSRA.sh`.
+
+###### Example:
+```bash
+# Extract all *.sra files in current directory
+cbi_fastq_dump_wrapper
+# [--- job: fastq-dump01 ---] Submitted batch job 1789048. Running 8 fastq-dump processes.
+```
