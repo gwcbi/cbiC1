@@ -30,14 +30,17 @@ echo "[---$SN---] ($(date)) $SN COMPLETE."
 
 '''
 
-# fastq-dump options:
-#     --split-files    Split mate pairs into seperate files
-#     --gzip           Compress output using gzip
-#     -F               Defline contains only original sequence name
-#     -R               Split into files by READ_FILTER value
-#     --defline-qual   Defline format specification for quailty. Use "+" to 
+# Determine the format of the read names. If the original name is numeric, use the default
+# SRA names. Otherwise, use the original name.
+FASTQ_FMT_CMD = '''fastq-dump -F -Z -X 1 %(srafile)s  2> /dev/null | head -n1 | cut -f1 | grep -q '^@[0-9]\+$' && fmt="" || fmt=" -F "'''
 
-FASTQ_DUMP_CMD = '''fastq-dump --split-files --gzip -F -R --defline-qual "+"  %(srafile)s &'''
+# fastq-dump options:
+#     -Q 33                Offset to use for quality conversion (33)
+#     --split-files        Split mate pairs into seperate files
+#     --gzip               Compress output using gzip
+#     -R                   Split into files by READ_FILTER value
+#     --defline-qual '+'   Defline format specification for quailty. Use "+" for empty defline
+FASTQ_DUMP_CMD = '''fastq-dump $fmt -Q 33 --split-files --gzip -R --defline-qual '+'  %(srafile)s &'''
 
 """ Functions """
 def chunks(l, n):
@@ -56,8 +59,9 @@ def main(args):
     for i,chunk in enumerate(chunks(allfiles, args.chunksize)):
         filecmds = []
         for fs in chunk:
+            fcmd = FASTQ_FMT_CMD % {'srafile':fs}
             cmd = FASTQ_DUMP_CMD % {'srafile':fs}
-            filecmds.extend(['echo "[---$SN---] ($(date)) COMMAND: %s"' % cmd, cmd, ''])
+            filecmds.extend([fcmd, 'echo "[---$SN---] ($(date)) COMMAND: %s"' % cmd, cmd, ''])
         
         script = [SCRIPT_HEADER % vars(args)] + filecmds + [SCRIPT_FOOTER % vars(args)]
         if args.nosubmit:

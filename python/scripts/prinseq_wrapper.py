@@ -6,7 +6,6 @@ import re
 
 from cbibio.utils.guess_encoding import guess_encoding
 
-
 """ Constants """
 # Extensions for fastq files
 FASTQ_EXTENSIONS = set(['fastq','fq'])
@@ -102,7 +101,7 @@ def make_filecmd(fs, args):
 
     # Output arguments
     if not args.out_prinseq_names:
-        goodstr = "-out_good %s_pseq" % prefix             # Output good file with wrapper naming scheme
+        goodstr = "-out_good %s.pseq" % prefix             # Output good file with wrapper naming scheme
     else:
         goodstr = ''                                       # Output good file with prinseq naming scheme
     
@@ -110,7 +109,7 @@ def make_filecmd(fs, args):
         badstr = '-out_bad null'                           # Do not output bad file
     else:
         if not args.out_prinseq_names:
-            badstr =  '-out_bad %s_pseqfail' % prefix      # Output bad file with wrapper naming scheme
+            badstr =  '-out_bad %s.pseqfail' % prefix      # Output bad file with wrapper naming scheme
         else:
             badstr =  ''                                   # Output bad file with prinseq naming scheme
 
@@ -189,9 +188,6 @@ def make_footer():
          ]
 
 def main(args):
-    if not args.nosubmit:
-        from subprocess import Popen,PIPE
-
     # Get list of files
     if args.fofn is not None:
         allfiles  = sorted([l.strip() for l in args.fofn])
@@ -284,7 +280,7 @@ if __name__ == '__main__':
                                    1 (FASTA only), 2 (FASTA and QUAL), 3 (FASTQ), 4 (FASTQ and FASTA), or 5 (FASTQ, FASTA and QUAL)''')
   output_group.add_argument('--out_prinseq_names', action='store_true',
                            help='''By default, this wrapper names the good output files by removing the file
-                                   extension and adding "_pseq" to the file name. The prinseq default
+                                   extension and adding ".pseq" to the file name. The prinseq default
                                    is to add random characters to prevent overwriting; however, the
                                    filenames can be cumbersome for downstream analysis. Use this flag to
                                    use the default prinseq behavior.''')
