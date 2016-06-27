@@ -170,13 +170,33 @@ def main(args):
             print >>sys.stderr, 'reads1: %s\treads2: %s' % (fs)
     print >>sys.stderr, ''
 
+    # Calculate number of simultaneous processes to run
+    cpu_per_run = 2
+    if args.fastx_artifacts: cpu_per_run += 1
+    if args.fastx_qual: cpu_per_run += 1
+
     for i,chunk in enumerate(chunks(filesets, args.chunksize)):
         filecmds = []
         for fs in chunk:
-            cmd = '%s &' % make_filecmd(fs, args)
-            filecmds.extend(['echo "[---$SN---] ($(date)) COMMAND: %s"' % cmd, cmd, ''])
+            cmd = '%s' % make_filecmd(fs, args)
+            filecmds.append( ['echo "[---$SN---] ($(date)) COMMAND: %s"' % cmd, cmd, ''] )
         
-        script = [SCRIPT_HEADER % vars(args)] + filecmds + [SCRIPT_FOOTER % vars(args)]
+        maxproc = args.chunksize / cpu_per_run
+        procs = [list() for _ in range(maxproc)]
+        procnum = 0
+        for fc in filecmds:
+            procs[procnum].extend(fc)
+            procnum = (procnum + 1) % maxproc
+        
+        script = [SCRIPT_HEADER % vars(args)]
+        for proc in procs:
+            if len(proc):
+                script.append('(')
+                script.extend(proc)
+                script.append(') &')
+        
+        script.append(SCRIPT_FOOTER % vars(args))
+        
         if args.nosubmit:
             with open('job.%02d.sh' % (i+1), 'w') as outh: 
                 print >>outh, '\n'.join(script)
@@ -219,7 +239,7 @@ if __name__ == '__main__':
   slurm_group.add_argument('--nosubmit', action='store_true',
                            help="Do not submit jobs directly. Output is written to batch scripts")
   slurm_group.add_argument('--chunksize', type=int, default=16, 
-                           help="Number of prinseq instances per job. This should be less than or equal to the number of CPUs per node")
+                           help="Number of runs to process in each job. Should be equal to number of CPUs")
   slurm_group.add_argument('--walltime', type=int, default=480, 
                            help="Slurm walltime request (in minutes)")
   slurm_group.add_argument('--partition', default="short", 
