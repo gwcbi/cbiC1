@@ -42,6 +42,23 @@ def get_rundata(xmlfile):
     rundata['run_bases'] = run.find('Bases').get('count')
     rundata['run_readperspot'] = run.find('Statistics').get('nreads')
     rundata['run_nspots'] = run.find('Statistics').get('nspots')
+    
+    experiment = root.findall('./EXPERIMENT_PACKAGE/EXPERIMENT')
+    assert len(experiment) == 1
+    experiment = experiment[0]
+    rundata['experiment_accession'] = experiment.get('accession')
+    rundata['experiment_alias'] = experiment.get('alias')
+    libdesc = experiment.find('./DESIGN/LIBRARY_DESCRIPTOR')
+    if libdesc is not None:
+        for child in libdesc:
+            if not list(child):
+                rundata[child.tag.lower()] = child.text
+            elif len(list(child))==1:
+                rundata[child.tag.lower()] = list(child)[0].tag
+            else:
+                print >>sys.stderr, "WARNING: Ambiguous tag %s" % child.tag
+                rundata[child.tag.lower()] = list(child)[0].tag
+    
     return rundata
 
 ###################################################################################################
@@ -52,11 +69,15 @@ def main(args):
         os.mkdir(args.dest)
     
     # Search entrez for the SRA study ID
-    record = Entrez.read(Entrez.esearch(db="sra",term=sraID,retmax=1000))
+    record = Entrez.read(Entrez.esearch(db="sra",term=sraID,retmax=5000))
     
     # Download the XML for each sample
     xml_files = []
     for sampid in record['IdList']:
+        # xml_file = '%s/%s.xml' % (args.dest, sampid)
+        # if os.path.exists(xml_file):
+        #     print >>sys.stderr, 'Found %s' % sampid
+        #     continue
         print >>sys.stderr, 'Fetching %s' % sampid
         pr = Entrez.efetch(db="sra",id=sampid).read()
         root = ET.fromstring(pr)
