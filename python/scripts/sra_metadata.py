@@ -2,7 +2,7 @@
 
 import sys
 import os
-# import re
+import re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -29,7 +29,7 @@ def get_rundata(xmlfile):
     samp = samp[0]
     rundata['sample_accession'] = samp.get('accession')
     rundata['sample_alias'] = samp.get('alias')
-    if samp.find('TITLE'):
+    if samp.find('TITLE') is not None:
         rundata['sample_title'] = samp.find('TITLE').text
     for sattr in samp.findall("SAMPLE_ATTRIBUTES/SAMPLE_ATTRIBUTE"):
         rundata['sample_%s' % sattr.find("TAG").text] = sattr.find("VALUE").text
@@ -69,11 +69,17 @@ def main(args):
         os.mkdir(args.dest)
     
     # Search entrez for the SRA study ID
-    record = Entrez.read(Entrez.esearch(db="sra",term=sraID,retmax=5000))
+    ### This stopped working for some reason:
+    # record = Entrez.read(Entrez.esearch(db="sra",term=sraID,retmax=5000))
+    # id_list = record['IdList']
+    ### Here is a workaround:
+    response = Entrez.esearch(db="sra",term=sraID,retmax=5000)
+    searchroot = ET.fromstring(response.read())
+    id_list = [elem.text for elem in searchroot.findall('IdList/Id')]
     
     # Download the XML for each sample
     xml_files = []
-    for sampid in record['IdList']:
+    for sampid in id_list:
         # xml_file = '%s/%s.xml' % (args.dest, sampid)
         # if os.path.exists(xml_file):
         #     print >>sys.stderr, 'Found %s' % sampid
