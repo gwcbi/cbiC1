@@ -76,9 +76,9 @@ SCRIPT_FOOTER = '''
 wait
 
 #---Complete job
-t2=$(date +"%%s")
+t2=$(date +"%s")
 diff=$(($t2-$t1))
-echo "[---$SN---] Total time: ($(date)) $(($diff / 60)) minutes and $(($diff %% 60)) seconds."
+echo "[---$SN---] Total time: ($(date)) $(($diff / 60)) minutes and $(($diff % 60)) seconds."
 echo "[---$SN---] ($(date)) $SN COMPLETE."
 
 '''
