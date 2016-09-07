@@ -1,12 +1,11 @@
 #! /usr/bin/env python
+import sys
 
 # This is the set of characters that are ONLY found in phred33
 # !"#$%&\'()*+,-./0123456789:
 phred33 = set(chr(_) for _ in range(33,59)) 
 
-
-
-def guess_encoding(fh,nsamp=10000):
+def guess_encoding(fh,nsamp=100):
     '''
     S - Sanger        Phred+33,  raw reads typically (0, 40).  ASCII 33-73
     X - Solexa        Solexa+64, raw reads typically (-5, 40). ASCII 59-104
@@ -17,10 +16,10 @@ def guess_encoding(fh,nsamp=10000):
     '''
     if isinstance(fh,basestring):
         fh = open(fh,'rU')
-    lines = (l for l in fh)
+    
     minq = 'z'
     maxq = '!'
-    for i,l in enumerate(lines):
+    for i,l in enumerate(fh):
         if i % 4 == 3:
             # Solexa+64 can be as low as -5, so if there are any ASCII characters below 
             # 59 (64-5), it is definitely phred-33.
@@ -45,9 +44,12 @@ def guess_encoding(fh,nsamp=10000):
         return 'Phred+33'
 
 if __name__ == '__main__':
-  import argparse
-  import sys
-  parser = argparse.ArgumentParser(description='Guess the encoding of fastq file')
-  parser.add_argument('infile', nargs='?', type=argparse.FileType('rU'), default=sys.stdin)
-  args = parser.parse_args()
-  print >>sys.stdout, guess_encoding(args.infile)
+    import argparse
+    parser = argparse.ArgumentParser(description='Guess the encoding of fastq file')
+    parser.add_argument('infile')
+    args = parser.parse_args()
+    if args.infile.endswith('.gz'):
+        import gzip    
+        print >>sys.stderr, guess_encoding(gzip.open(args.infile, 'rb'))
+    else:
+        print >>sys.stderr, guess_encoding(args.infile)
