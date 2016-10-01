@@ -2,7 +2,7 @@
 
 # A simple bash script for counting reads and bases in fastq files
 
-function fastqCount() {
+function fastqCt() {
   local infile=$1
   local v=$(sed -n '2~4p' $infile | wc -lc)
   local nline=$(echo $v | cut -f1 -d' ')
@@ -12,7 +12,6 @@ function fastqCount() {
 
 [[ -z $1 ]] && files="*" || files="$@"
 for f in $files; do
-  [[ "${f##*.}" == "fastq" ]] && fastqCount $f
-  [[ "${f##*.}" == "fq" ]] && fastqCount $f 
+  [[ "${f##*.}" == "fastq" ]] && fastqCt $f
+  [[ "${f##*.}" == "fq" ]] && fastqCt $f 
 done
-

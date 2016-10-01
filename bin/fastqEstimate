@@ -1,0 +1,25 @@
+#! /bin/bash
+
+# A simple bash script for estimating the number of reads in fastq files
+
+### Estimate the number of reads in a FASTQ file
+# sample sections of file
+function fastqEst() {
+    local f=$1
+    local tot=$(du -b $f | cut -f1)
+    local ssize=1048576
+    local nsamp=20
+    local nseq=0
+    for i in `seq $nsamp`; do
+        c=$(tail -c+$(perl -e "print int(rand($tot-$ssize))") $f | head -c $ssize | perl -0ne 'print $n=()=/@.+?\n\w+?\n\+.*?\n\S+?/g;')
+        nseq=$(($nseq+$c))
+    done
+    local est=$(perl -e "print int(($tot*$nseq)/($nsamp*$ssize))")
+    echo -e "$f\t$est"
+}
+
+[[ -z $1 ]] && files="*" || files="$@"
+for f in $files; do
+  [[ "${f##*.}" == "fastq" ]] && fastqEst $f
+  [[ "${f##*.}" == "fq" ]] && fastqEst $f
+done
