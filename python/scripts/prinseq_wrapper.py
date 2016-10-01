@@ -208,9 +208,9 @@ def main(args):
         job_sh = [header] + body + [footer]
         
         if args.nosubmit:
-            with open('job.%02d.sh' % (i+1), 'w') as outh: 
+            with open('prinseq_job.%02d.sh' % (i+1), 'w') as outh: 
                 print >>outh, '\n'.join(job_sh)
-            print >>sys.stderr, '[--- job: prinseq%02d ---] Slurm script written to "job.%02d.sh".' % ((i+1), (i+1))
+            print >>sys.stderr, '[--- job: prinseq%02d ---] Slurm script written to "prinseq_job.%02d.sh".' % ((i+1), (i+1))
         else:
             # Submit
             from subprocess import Popen,PIPE
